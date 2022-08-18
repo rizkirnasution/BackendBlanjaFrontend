@@ -1,11 +1,11 @@
-const categoryModel = require('../models/category')
+const transactionsModel = require('../models/transactions')
 const commonHelper = require('../helper/common')
-const categoryController = {  
+const transactionsController = {  
 
-  searchKeywordsCategory: async (request, response) => {
+  searchKeywordsTransactions: async (request, response) => {
     try {
       const keywords = "" || request.query.keyword;
-      const result = await categoryModel.searchKeywordsCategory(keywords);
+      const result = await transactionsModel.searchKeywordsTransactions(keywords);
       response.status(200).json({
         data: result.rows,
       });
@@ -14,16 +14,16 @@ const categoryController = {
     }
   },
 
-  getAllCategoryLimit: async(req, res) => {
+  getAllTransactionsLimit: async(req, res) => {
     try{
       const page = Number(req.query.page) || 1
       const limit = Number(req.query.limit) || 5
       const offset = (page - 1) * limit
-      const sortby = req.query.sortby || "name"
+      const sortby = req.query.sortby || "address"
       const sort = req.query.sort || "ASC"
       console.log(sort);
-      const result = await categoryModel.selectAllCategoryLimit({limit,offset,sort,sortby})
-      const {rows: [count]} = await categoryModel.countCategory()
+      const result = await transactionsModel.selectAllTransactionsLimit({limit,offset,sort,sortby})
+      const {rows: [count]} = await transactionsModel.countTransactions()
       const totalData = parseInt(count.count)
       const totalPage = Math.ceil(totalData/limit)
       const pagination ={     
@@ -37,8 +37,8 @@ const categoryController = {
       console.log(error);
     }
   },
-  getAllCategory: (req, res) => {
-    categoryModel
+  getAllTransactions: (req, res) => {
+    transactionsModel
     .selectAll()
       .then(
         result => commonHelper.response(res, result.rows, 200, "get All data success")
@@ -46,9 +46,9 @@ const categoryController = {
       .catch(err => res.send(err)
       )
   },
-  getCategory: (req, res) => {
+  getTransactions: (req, res) => {
     const id = Number(req.params.id)
-    categoryModel.select(id)
+    transactionsModel.select(id)
       .then(
         result => commonHelper.response(res, result.rows, 200, "get data success")
       )
@@ -56,33 +56,35 @@ const categoryController = {
       )
   },
   insert: (req, res) => {
-    const { id, name } = req.body
-    categoryModel.insert(id, name)
+    const { id, address, detail_transactions_id } = req.body;
+    transactionsModel
+      .insert(id, address, detail_transactions_id)
       .then(
-        result => commonHelper.response(res, result.rows, 201, "Category created")
+        result => commonHelper.response(res, result.rows, 201, "Transactions created")
       )
       .catch(err => res.send(err)
       )
   },
   update: (req, res) => {
     const id = Number(req.params.id)
-    const name = req.body.name
-    categoryModel.update(id, name)
+    const { address, detail_transactions_id } = req.body;
+    transactionsModel
+      .update(id, address, detail_transactions_id)
       .then(
-        result => commonHelper.response(res, result.rows, 200, "Category updated")
+        result => commonHelper.response(res, result.rows, 200, "Transactions updated")
       )
       .catch(err => res.send(err)
       )
   },
   delete: (req, res) => {
     const id = Number(req.params.id)
-    categoryModel.deleteCategory(id)
+    transactionsModel.deleteTransactions(id)
       .then(
-        result => commonHelper.response(res, result.rows, 200, "Category deleted")
+        result => commonHelper.response(res, result.rows, 200, "Transactions deleted")
       )
       .catch(err => res.send(err)
       )
   }
 }
 
-module.exports = categoryController
+module.exports = transactionsController
