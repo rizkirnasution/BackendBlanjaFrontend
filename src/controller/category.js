@@ -1,5 +1,7 @@
+const createError = require('http-errors')
 const categoryModel = require('../models/category')
 const commonHelper = require('../helper/common')
+
 const categoryController = {  
 
   searchKeywordsCategory: async (request, response) => {
@@ -55,8 +57,10 @@ const categoryController = {
       .catch(err => res.send(err)
       )
   },
-  insert: (req, res) => {
-    const { id, name } = req.body
+  insert: async(req, res) => {
+    const { name } = req.body
+    const {rows: [count]} = await categoryModel.countCategory()
+    const id = Number(count.count)+1;
     categoryModel.insert(id, name)
       .then(
         result => commonHelper.response(res, result.rows, 201, "Category created")
@@ -64,24 +68,40 @@ const categoryController = {
       .catch(err => res.send(err)
       )
   },
-  update: (req, res) => {
-    const id = Number(req.params.id)
-    const name = req.body.name
-    categoryModel.update(id, name)
-      .then(
-        result => commonHelper.response(res, result.rows, 200, "Category updated")
-      )
-      .catch(err => res.send(err)
-      )
+  update: async(req, res, next) => {
+    try{
+      const id = Number(req.params.id)
+      const name = req.body.name
+      const {rowCount} = await categoryModel.findId(id)
+      if(!rowCount){
+        return next(createError(403,"ID is Not Found"))
+      }
+      categoryModel.update(id, name)
+        .then(
+          result => commonHelper.response(res, result.rows, 200, "Category updated")
+          )
+          .catch(err => res.send(err)
+          )
+        }catch(error){
+          console.log(error);
+        }
   },
-  delete: (req, res) => {
-    const id = Number(req.params.id)
-    categoryModel.deleteCategory(id)
-      .then(
-        result => commonHelper.response(res, result.rows, 200, "Category deleted")
-      )
-      .catch(err => res.send(err)
-      )
+  delete: async(req, res, next) => {
+    try{
+      const id = Number(req.params.id)
+      const {rowCount} = await categoryModel.findId(id)
+      if(!rowCount){
+        return next(createError(403,"ID is Not Found"))
+      }
+      categoryModel.deleteCategory(id)
+        .then(
+          result => commonHelper.response(res, result.rows, 200, "Category deleted")
+        )
+        .catch(err => res.send(err)
+        )
+    }catch(error){
+        console.log(error);
+    }
   }
 }
 

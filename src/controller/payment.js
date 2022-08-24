@@ -1,3 +1,4 @@
+const createError = require('http-errors')
 const paymentModel = require("../models/payment");
 const commonHelper = require('../helper/common')
 const paymentController = {
@@ -54,8 +55,10 @@ const paymentController = {
       .catch(err => res.send(err)
       )
   },
-  insert: (req, res) => {
-    const { id, amount } = req.body
+  insert: async(req, res, next) => {
+    const { amount } = req.body
+    const {rows: [count]} = await paymentModel.countPayment()
+    const id = Number(count.count)+1;
     paymentModel.insert(id, amount)
       .then(
         result => commonHelper.response(res, result.rows, 201, "Payment created")
@@ -63,24 +66,40 @@ const paymentController = {
       .catch(err => res.send(err)
       )
   },
-  update: (req, res) => {
-    const id = Number(req.params.id)
-    const amount = req.body.amount
-    paymentModel.update(id, amount)
-      .then(
-        result => commonHelper.response(res, result.rows, 200, "Payment updated")
-      )
-      .catch(err => res.send(err)
-      )
+  update: async(req, res,next) => {
+    try{
+      const id = Number(req.params.id)
+      const amount = req.body.amount
+      const {rowCount} = await paymentModel.findId(id)
+      if(!rowCount){
+        return next(createError(403,"ID is Not Found"))
+      }
+      paymentModel.update(id, amount)
+        .then(
+          result => commonHelper.response(res, result.rows, 200, "Payment updated")
+          )
+          .catch(err => res.send(err)
+          )
+        }catch(error){
+          console.log(error);
+        }
   },
-  delete: (req, res) => {
-    const id = Number(req.params.id)
-    paymentModel.deletePayment(id)
-      .then(
-        result => commonHelper.response(res, result.rows, 200, "Payment deleted")
-      )
-      .catch(err => res.send(err)
-      )
+  delete: async(req, res, next) => {
+    try{
+      const id = Number(req.params.id)
+      const {rowCount} = await paymentModel.findId(id)
+      if(!rowCount){
+        return next(createError(403,"ID is Not Found"))
+      }
+      paymentModel.deletePayment(id)
+        .then(
+          result => commonHelper.response(res, result.rows, 200, "Payment deleted")
+        )
+        .catch(err => res.send(err)
+        )
+    }catch(error){
+        console.log(error);
+    }
   }
 };
 

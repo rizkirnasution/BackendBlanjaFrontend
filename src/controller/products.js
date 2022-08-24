@@ -1,5 +1,7 @@
+const createError = require('http-errors')
 const productsModel = require('../models/products')
 const commonHelper = require('../helper/common')
+const client = require('../config/redis')
 const productsController = {  
 
   searchKeywordsProducts: async (request, response) => {
@@ -50,40 +52,86 @@ const productsController = {
     const id = Number(req.params.id)
     productsModel.select(id)
       .then(
-        result => commonHelper.response(res, result.rows, 200, "get data success")
+        result => {
+          client.setEx(`products/${id}`,60*60,JSON.stringify(result.rows))
+          commonHelper.response(res, result.rows, 200, "get data success from database")
+        }
       )
       .catch(err => res.send(err)
       )
   },
-  insert: (req, res) => {
-    const { id, name, stock, price, category_id, transactions_id } = req.body;
-    productsModel
-      .insert(id, name, stock, price, category_id, transactions_id)
+  insert: async(req, res) => {
+    const PORT = process.env.PORT || 5000
+    const DB_HOST = process.env.DB_HOST || 'localhost'
+    const photo = req.file.filename;
+    const { name, stock, price, descriptions, category_id, transactions_id} = req.body
+    const {rows: [count]} = await productsModel.countProducts()
+    const id = Number(count.count)+1;
+
+    const data ={
+      id,
+      name,
+      stock,
+      price,
+      photo:`http://${DB_HOST}:${PORT}/img/${photo}`,
+      descriptions,
+      category_id,
+      transactions_id
+    }
+    productsModel.insert(data)
       .then(
-        result => commonHelper.response(res, result.rows, 201, "Products created")
+        result => commonHelper.response(res, result.rows, 201, "Product created")
       )
       .catch(err => res.send(err)
       )
   },
-  update: (req, res) => {
-    const id = Number(req.params.id)
-    const { name, stock, price, category_id, transactions_id } = req.body;
-    productsModel
-      .update(id, name, stock, price, category_id, transactions_id)
-      .then(
-        result => commonHelper.response(res, result.rows, 200, "Products updated")
-      )
-      .catch(err => res.send(err)
-      )
+  update: async(req, res, next) => {
+    try{
+      const PORT = process.env.PORT || 5000
+      const DB_HOST = process.env.DB_HOST || 'localhost'
+      const id = Number(req.params.id)
+      const photo = req.file.filename;
+      const { name,stock,price,descriptions, category_id, transactions_id} = req.body
+      const {rowCount} = await productsModel.findId(id)
+      if(!rowCount){
+        return next(createError(403,"ID is Not Found"))
+      }
+      const data ={
+        id,
+        name,
+        stock,
+        price,
+        photo:`http://${DB_HOST}:${PORT}/img/${photo}`,
+        descriptions,
+        category_id, 
+        transactions_id
+      }
+      productsModel.update(data)
+        .then(
+          result => commonHelper.response(res, result.rows, 200, "Product updated")
+          )
+          .catch(err => res.send(err)
+          )
+        }catch(error){
+          console.log(error);
+        }
   },
-  delete: (req, res) => {
-    const id = Number(req.params.id)
-    productsModel.deleteProducts(id)
-      .then(
-        result => commonHelper.response(res, result.rows, 200, "Products deleted")
-      )
-      .catch(err => res.send(err)
-      )
+  delete: async(req, res, next) => {
+    try{
+      const id = Number(req.params.id)
+      const {rowCount} = await productsModel.findId(id)
+      if(!rowCount){
+        return next(createError(403,"ID is Not Found"))
+      }
+      productsModel.deleteProducts(id)
+        .then(
+          result => commonHelper.response(res, result.rows, 200, "Product deleted")
+        )
+        .catch(err => res.send(err)
+        )
+    }catch(error){
+        console.log(error);
+    }
   }
 }
 

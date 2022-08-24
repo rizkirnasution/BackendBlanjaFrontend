@@ -1,3 +1,4 @@
+const createError = require('http-errors')
 const detailTransModel = require('../models/detailtransactions')
 const commonHelper = require('../helper/common')
 const detailTransactionsController = {  
@@ -54,35 +55,51 @@ const detailTransactionsController = {
       .catch(err => res.send(err)
       )
   },
-  insert: (req, res) => {
-    const { id, total, payment_id } = req.body;
-    detailTransModel
-      .insert(id, total, payment_id)
+  insert: async(req, res) => {
+    const { total, payment_id } = req.body
+    const {rows: [count]} = await detailTransModel.countDetTrans()
+    const id = Number(count.count)+1;
+    detailTransModel.insert(id, total, payment_id)
       .then(
         result => commonHelper.response(res, result.rows, 201, "Detail Transactions created")
       )
       .catch(err => res.send(err)
       )
   },
-  update: (req, res) => {
-    const id = Number(req.params.id)
-    const {total, payment_id } = req.body;
-    detailTransModel
-      .update(id, total, payment_id )
-      .then(
-        result => commonHelper.response(res, result.rows, 200, "Detail Transactions updated")
-      )
-      .catch(err => res.send(err)
-      )
+  update: async(req, res, next) => {
+    try{
+      const id = Number(req.params.id)
+      const {total, payment_id} = req.body
+      const {rowCount} = await detailTransModel.findId(id)
+      if(!rowCount){
+        return next(createError(403,"ID is Not Found"))
+      }
+      detailTransModel.update(id, total, payment_id)
+        .then(
+          result => commonHelper.response(res, result.rows, 200, "Detail Transactions updated")
+          )
+          .catch(err => res.send(err)
+          )
+        }catch(error){
+          console.log(error);
+        }
   },
-  delete: (req, res) => {
-    const id = Number(req.params.id)
-    detailTransModel.deleteDetTrans(id)
-      .then(
-        result => commonHelper.response(res, result.rows, 200, "Detail Transactions deleted")
-      )
-      .catch(err => res.send(err)
-      )
+  delete: async(req, res, next) => {
+    try{
+      const id = Number(req.params.id)
+      const {rowCount} = await detailTransModel.findId(id)
+      if(!rowCount){
+        return next(createError(403,"ID is Not Found"))
+      }
+      detailTransModel.deleteDetTrans(id)
+        .then(
+          result => commonHelper.response(res, result.rows, 200, "Detail Transactions deleted")
+        )
+        .catch(err => res.send(err)
+        )
+    }catch(error){
+        console.log(error);
+    }
   }
 }
 

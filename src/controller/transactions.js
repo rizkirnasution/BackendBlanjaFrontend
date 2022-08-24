@@ -1,3 +1,4 @@
+const createError = require('http-errors')
 const transactionsModel = require('../models/transactions')
 const commonHelper = require('../helper/common')
 const transactionsController = {  
@@ -55,35 +56,51 @@ const transactionsController = {
       .catch(err => res.send(err)
       )
   },
-  insert: (req, res) => {
-    const { id, address, detail_transactions_id } = req.body;
-    transactionsModel
-      .insert(id, address, detail_transactions_id)
+  insert: async(req, res) => {
+    const { address, detail_transactions_id } = req.body
+    const {rows: [count]} = await transactionsModel.countTransactions()
+    const id = Number(count.count)+1;
+    transactionsModel.insert(id, address, detail_transactions_id)
       .then(
         result => commonHelper.response(res, result.rows, 201, "Transactions created")
       )
       .catch(err => res.send(err)
       )
   },
-  update: (req, res) => {
-    const id = Number(req.params.id)
-    const { address, detail_transactions_id } = req.body;
-    transactionsModel
-      .update(id, address, detail_transactions_id)
-      .then(
-        result => commonHelper.response(res, result.rows, 200, "Transactions updated")
-      )
-      .catch(err => res.send(err)
-      )
+  update: async(req, res, next) => {
+    try{
+      const id = Number(req.params.id)
+      const {address, detail_transactions_id} = req.body
+      const {rowCount} = await transactionsModel.findId(id)
+      if(!rowCount){
+        return next(createError(403,"ID is Not Found"))
+      }
+      transactionsModel.update(id, address, detail_transactions_id)
+        .then(
+          result => commonHelper.response(res, result.rows, 200, "Transactions updated")
+          )
+          .catch(err => res.send(err)
+          )
+        }catch(error){
+          console.log(error);
+        }
   },
-  delete: (req, res) => {
-    const id = Number(req.params.id)
-    transactionsModel.deleteTransactions(id)
-      .then(
-        result => commonHelper.response(res, result.rows, 200, "Transactions deleted")
-      )
-      .catch(err => res.send(err)
-      )
+  delete: async(req, res, next) => {
+    try{
+      const id = Number(req.params.id)
+      const {rowCount} = await transactionsModel.findId(id)
+      if(!rowCount){
+        return next(createError(403,"ID is Not Found"))
+      }
+      transactionsModel.deleteTransactions(id)
+        .then(
+          result => commonHelper.response(res, result.rows, 200, "Transactions deleted")
+        )
+        .catch(err => res.send(err)
+        )
+    }catch(error){
+        console.log(error);
+    }
   }
 }
 
