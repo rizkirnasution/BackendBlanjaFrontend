@@ -6,7 +6,7 @@ const productsController = {
 
   searchKeywordsProducts: async (request, response) => {
     try {
-      const keywords = "" || request.query.keyword;
+      const keywords = "" || request.query.search;
       const result = await productsModel.searchKeywordsProducts(keywords);
       response.status(200).json({
         data: result.rows,
@@ -64,7 +64,7 @@ const productsController = {
     const PORT = process.env.PORT || 5000
     const DB_HOST = process.env.DB_HOST || 'localhost'
     const photo = req.file.filename;
-    const { name, stock, price, descriptions, category_id, transactions_id} = req.body
+    const { name, stock, price, descriptions, category_id, transactions_id, merk, condition} = req.body
     const {rows: [count]} = await productsModel.countProducts()
     const id = Number(count.count)+1;
 
@@ -76,7 +76,8 @@ const productsController = {
       photo:`http://${DB_HOST}:${PORT}/img/${photo}`,
       descriptions,
       category_id,
-      transactions_id
+      transactions_id,
+      merk, condition
     }
     productsModel.insert(data)
       .then(
@@ -91,7 +92,7 @@ const productsController = {
       const DB_HOST = process.env.DB_HOST || 'localhost'
       const id = Number(req.params.id)
       const photo = req.file.filename;
-      const { name,stock,price,descriptions, category_id, transactions_id} = req.body
+      const { name,stock,price,descriptions, category_id, transactions_id, merk, condition} = req.body
       const {rowCount} = await productsModel.findId(id)
       if(!rowCount){
         return next(createError(403,"ID is Not Found"))
@@ -104,7 +105,9 @@ const productsController = {
         photo:`http://${DB_HOST}:${PORT}/img/${photo}`,
         descriptions,
         category_id, 
-        transactions_id
+        transactions_id,
+        merk,
+        condition
       }
       productsModel.update(data)
         .then(

@@ -55,7 +55,7 @@ const paymentController = {
       .catch(err => res.send(err)
       )
   },
-  insert: async(req, res, next) => {
+  insert: async(req, res) => {
     const { amount } = req.body
     const {rows: [count]} = await paymentModel.countPayment()
     const id = Number(count.count)+1;
@@ -69,7 +69,7 @@ const paymentController = {
   update: async(req, res,next) => {
     try{
       const id = Number(req.params.id)
-      const amount = req.body.amount
+      const amount = req.body
       const {rowCount} = await paymentModel.findId(id)
       if(!rowCount){
         return next(createError(403,"ID is Not Found"))

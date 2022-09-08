@@ -4,7 +4,7 @@ const morgan = require('morgan')
 const cors = require('cors')
 const createError = require('http-errors')
 const app = express()
-const helmet = require("helmet")
+// const helmet = require("helmet")
 const xss = require('xss-clean')
 
 const mainRouter = require('./src/routes/index')
@@ -14,7 +14,7 @@ const DB_HOST = process.env.DB_HOST
 app.use(express.json());
 app.use(morgan('dev'));
 app.use(cors())
-app.use(helmet());
+// app.use(helmet());
 app.use(xss());
 app.use(express.raw())
 
